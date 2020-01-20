@@ -1,39 +1,43 @@
 \section{Introduction}
+% \begin{itemize}
+%     \item If we remove the constraint on the number of physical processors we have available to us, and if all processors could communicate with minimal, predictable latency, how would we design distributed applications?
+% \end{itemize}
 
 \section{Nanoservices}
-\todo[inline]{Motivate nanoservices.}
-\todo[inline]{Describe what they are and how they fill today's needs.}
+% \todo[inline]{Motivate nanoservices.}
+% \todo[inline]{Describe what they are and how they fill today's needs.}
+
 
 \section{NanoPU Design Overview}
-\todo[inline]{Insert full system diagram.}
+% \todo[inline]{Insert full system diagram.}
 
 \subsection{NIC Datapath}
-\todo[inline]{Describe arbiter, PISA pipeline, message reassembly buffer.}
-\todo[inline]{Insert figure of the datapath.}
+% \todo[inline]{Describe arbiter, PISA pipeline, message reassembly buffer.}
+% \todo[inline]{Insert figure of the datapath.}
 
 \subsection{NIC-Core Interface}
-\todo[inline]{Describe per-active-context FIFO mechanism, clock-domain-crossing FIFO, packetization buffer. Describe how GPRs are reserved as well as new CSRs.}
+% \todo[inline]{Describe per-active-context FIFO mechanism, clock-domain-crossing FIFO, packetization buffer. Describe how GPRs are reserved as well as new CSRs.}
 
 \subsection{The NanoKernel and NIC-Driven Thread Scheduling}
-\todo[inline]{Describe NanoKernel interaction with NIC. Describe nanoservice interaction with NanoKernel.}
+% \todo[inline]{Describe NanoKernel interaction with NIC. Describe nanoservice interaction with NanoKernel.}
 
 \section{Programming the NanoPU with Nanoservice Applications}
-\todo[inline]{Describe how nanoservices must be written on top of NanoPU and how it differs from traditional applications.}
-\todo[inline]{Nanoservice apps should strive to process network data in FIFO order, should have minimal memory requirements, should be compose of single-threaded nanoservers that are directly communicating with one another.}
+% \todo[inline]{Describe how nanoservices must be written on top of NanoPU and how it differs from traditional applications.}
+% \todo[inline]{Nanoservice apps should strive to process network data in FIFO order, should have minimal memory requirements, should be compose of single-threaded nanoservers that are directly communicating with one another.}
 
 \section{Evaluations}
 
 \subsection{Microbenchmarks}
-\todo[inline]{Loopback latency, ingress/egress path latency, 64B pkt throughput measurements.}
+% \todo[inline]{Loopback latency, ingress/egress path latency, 64B pkt throughput measurements. Maybe count memory loads and stores for simple app?}
 
 \subsection{Bare Metal Application Evaluations}
-\todo[inline]{This section shows the reduction in average latency as a result of the hardware fast path to the core of the CPU.}
-\todo[inline]{Streaming (NFV style) app, NN inference node, Othello App, N-body simulation (???)}
+% \todo[inline]{This section shows the reduction in average latency as a result of the hardware fast path to the core of the CPU.}
+% \todo[inline]{Streaming (NFV style) app, NN inference node, Othello App, N-body simulation (???)}
 
 \subsection{Thread Scheduling Evaluations}
-\todo[inline]{This section shows the reduction in tail latency as a result of NIC-driven thread scheduling for nanoservice applications.}
-\todo[inline]{Compare Linux-style scheduling on NanoPU to NIC-driven scheduling on NanoPU.}
-\todo[inline]{Maybe also compare NIC-driven scheduling on NanoPU to Linux-style scheduling on IceNIC?}
+% \todo[inline]{This section shows the reduction in tail latency as a result of NIC-driven thread scheduling for nanoservice applications.}
+% \todo[inline]{Compare Linux-style scheduling on NanoPU to NIC-driven scheduling on NanoPU.}
+% \todo[inline]{Maybe also compare NIC-driven scheduling on NanoPU to Linux-style scheduling on IceNIC?}
 
 \section{Related Work}
 
