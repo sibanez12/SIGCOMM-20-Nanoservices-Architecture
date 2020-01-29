@@ -1,0 +1,6 @@
+\section{Discussion}
+\begin{itemize}
+    \item How best to deal with messages that contain floating point numbers? Perhaps we will add a new instruction that directly copies bytes between integer and FP registers without doing any format conversions.
+    \item \chang{In addition to the NanoKernel and priority-based scheduling, it seems we also need a runtime system that ensures the high utilization of NanoPU cores and NICs. It'll be responsible for dispatching nanoservice apps to NanoPU cores, monitoring the utilization of the cores and NICs, along with the status of contexts. If some cores or NICs are over/under-utilized for a longer period of time, it'll need to rebalance the system. If some contexts are starved for a long period of time, again it may need to address it. We don't need to design and build such a runtime for this paper, but we may at least have to identify the needs for such one, while leaving the actual design to the next paper.}
+    \item Optimizations for reducing scheduler latency: per-context register file in hardware.
+\end{itemize}

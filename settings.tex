@@ -1,0 +1,89 @@
+% Copyright
+\renewcommand\footnotetextcopyrightpermission[1]{} % removes footnote with conference info
+\setcopyright{none}
+% \setcopyright{acmcopyright}
+%\setcopyright{acmlicensed}
+%\setcopyright{rightsretained}
+%\setcopyright{usgov}
+%\setcopyright{usgovmixed}
+%\setcopyright{cagov}
+%\setcopyright{cagovmixed}
+
+% DOI
+\acmDOI{}
+
+% ISBN
+\acmISBN{}
+
+%Conference
+\acmConference[Submitted for review to SIGCOMM]{}
+\acmYear{2020}
+\copyrightyear{}
+
+\acmPrice{}
+
+% Enable page numbers
+\settopmatter{printfolios=true}
+
+% Reference format
+\settopmatter{printacmref=true}
+
+% Removes footnote with conference information in first column
+%\renewcommand\footnotetextcopyrightpermission[1]{} 
+
+% Removes running headers
+%\pagestyle{plain} 
+
+% Authors per row
+\settopmatter{authorsperrow=1}
+
+%% Spacing
+\setlength{\textfloatsep}{4pt}
+%\setlength{\belowcaptionskip}{-4pt}
+
+%% Abbreviations
+%\newcommand{\ie}{{\em i.e.}}
+\newcommand{\ie}{{i.e.}}
+%\newcommand{\eg}{{\em e.g.}}
+\newcommand{\eg}{{e.g.}}
+\newcommand{\ea}{{\em et al.}}
+\newcommand{\fp}{\vspace*{0.01in}\noindent}
+\newcommand{\name}{L-NIC\xspace}
+
+%% Comments
+\newcommand{\showComments}{yes}
+%\newcommand{\showComments}{no}
+
+\newcommand{\note}[2]{
+    \ifthenelse{\equal{\showComments}{yes}}{\textcolor{#1}{#2}}{}
+}
+
+\newcommand{\xxx}[1]{\textcolor{red}{#1}}
+%\newcommand{\todo}[1]{\todo{red}{Todo: #1}}
+\newcommand{\ms}[1]{\todo[color=blue]{Shahbaz: #1}}
+\newcommand{\nm}[1]{{\todo[color=purple]{Nick: #1}}}
+\newcommand{\steve}[1]{\textcolor{purple}{SI: #1}}
+\newcommand{\chang}[1]{\textcolor{blue}{CK: #1}}
+
+%% Tables
+\newcolumntype{M}[1]{>{\centering\arraybackslash}m{#1}}
+%\newcolumntype{g}{>{\columncolor{Gray}}c}
+%\newcolumntype{C}[1]{>{\centering}m{#1}}
+
+%% Fonts
+\definecolor{Gray}{gray}{0.9}
+\newcommand{\cmark}{\ding{51}}
+\newcommand{\xmark}{\ding{55}}
+
+%% Hyphenations
+\hyphenation{micro-second}
+\hyphenation{time-scales}
+
+%% Figures
+\graphicspath{{figures/}}
+
+%% Paragraphs
+%\renewcommand{\paragraph}[1]{\\\indent{\textbf{\textsl{#1:}}}}
+
+%% Others
+\newcommand{\gplfronttext}{}

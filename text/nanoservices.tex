@@ -1,0 +1,25 @@
+\section{Nanoservices}
+\begin{itemize}
+    \item Nanoservices are a framework for building compute-intensive distributed applications.
+    \item We believe that the performance of many compute-intensive distributed applications is severely limited by scalability of modern systems.
+    \begin{itemize}
+        \item For instance, consider performing an N-body cosmological simulation of 1 million particles, which is considered to be a small benchmark in the field of astronomy~\cite{changa}. This application is designed to simulate motion of the particles under the influence of gravity. Processing can often be parallelized for each particle in the simulation, for instance to compute the force that each particle exerts on every other particle. Today, these simulations are run the modern super computers using parallel programming frameworks such as CHARM++~\cite{charm++}. However, these systems are only able to scale to O(10K) processors before performance starts to degrade~\cite{changa}. Therefore, modern systems are unable to exploit all possible parallelism in this application, thus limiting performance.
+        \item Similarly, consider multiplying two 100x100 matrices, which is a small operation in today's world of machine learning and AI. This simple operation requires performing 1 million multiplications that could potentially be parallelized. However, even a modern TPU v3 chip, which is explicitly designed to do matrix multiplications, only has about 64K multiply accumulate processors, so cannot fully parallelize this operation. The nanoservice infrastructure would allow application developers to harness about as many cores as there are multiply accumulate processors in a large TPU pod - O(10M). And since NanoPU cores are more flexible than a TPU's multiply accumulate processors, the nanoservice infrastructure is more general purpose than a TPU pod and can be used to run machine learning workloads such as neural network inference and training.
+        \item We can make a similar argument for graphics processing on GPUs if needed.
+    \end{itemize}
+    \item We believe that these scalability limitations exist for the following reasons:
+    \begin{enumerate}
+        \item Large and unpredictable RPC completion times force application developers to prepare for the worst and provision resources accordingly. There is also the well known performance degradation caused by the straggler effect that plagues many modern distributed applications. Additionally, large overheads for small RPCs force application developers to batch what would be many small messages into fewer large messages, thus sacrificing opportunities for parallel computation.
+        \item Modern network transport protocols are unable to handle massive degrees of incast (e.g. 10K-to-1) without ever overflowing or underflowing the receiver buffer.
+    \end{enumerate}
+    \item In this paper, we propose an architecture to deal with issue (1), while leaving issue (2) as a challenge for the research community.
+    \item Applications that are best suited for implementation using nanoservices are those that are highly parallelizable and compute intensive.
+    \item Target applications should be divisible into compute intensive nanotasks that all service network messages in less than 1 us and have a small enough working set such that they fit in on-chip SRAM so that memory accesses are as fast as accessing the L1 cache on an general purpose CPU. \chang{Working set must be contained within register files or L1 cache? I thought we were assuming the former. Also, if we tell the latter, some people may ask for the difference between ours and DDIO.}
+    \item Nanotasks should not perform DRAM memory accesses because a single DRAM memory access requires about 100 ns, which is already a large fraction of the maximum response time allowed by nanotasks.
+    \item In order to make nanoservices work, we need new infrastructure. This new infrastructure must:
+    \begin{itemize}
+        \item Minimize overheads for network messages in order to make it practical to send and process millions of requests per second.
+        \item Minimize average network latency to improve performance for the common case.
+        \item Minimize tail RPC completion time because end-to-end performance of distributed applications are often dominated by this metric. Minimizing tail RPC completion time will require infrastructure that is able to enforce strict performance isolation.
+    \end{itemize}
+\end{itemize}
