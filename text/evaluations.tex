@@ -16,9 +16,12 @@
 \subsection{Microbenchmarks}
 This section describes a set of microbenchmarks that characterize various aspects of the NanoPU architecture.
 
-\paragraph{Timing Analysis.} We synthesized both our NanoPU RISC-V prototype as well as a standard RISC-V core with a traditional NIC (IceNIC) to a modern FPGA (Xilinx Ultrascale+) in order to analyze the critical paths in each design. We found that the critical path in both designs is in the L2 cache, and hence our NanoPU prototype is able to achieve the same clock rate as a traditional RISC-V system.
+\paragraph{Timing Analysis.} We synthesized both our NanoPU RISC-V prototype as well as a standard RISC-V core with a traditional NIC (IceNIC) to a modern FPGA (Xilinx Ultrascale+) in order to analyze the critical paths in each design.
+We found that the critical path in both designs is in the L2 cache, and hence our NanoPU prototype is able to achieve the same clock rate as a traditional RISC-V system.
 
-\paragraph{Basic Latency/Throughput Performance Analysis.} The latency of the NanoPU's TX path is 11 cycles for a single word message, which is measured from the cycle when an application writes the word to when the word is placed on the network (not including the MAC processing). The corresponding latency of the RX path is 6 cycles. Figure~\ref{fig:loopback-latency} shows the loopback latency for various packet lengths for both our NanoPU prototype and the traditional DMA-based IceNIC.
+\paragraph{Basic Latency/Throughput Performance Analysis.} The latency of the NanoPU's TX path is 11 cycles for a single word message, which is measured from the cycle when an application writes the word to when the word is placed on the network (not including the MAC processing).
+The corresponding latency of the RX path is 6 cycles.
+Figure~\ref{fig:loopback-latency} shows the loopback latency for various packet lengths for both our NanoPU prototype and the traditional DMA-based IceNIC.
 
 Table\ref{tab:throughput} shows the TX and RX throughput for 64B packets for both our NanoPU prototype and IceNIC. 
 
