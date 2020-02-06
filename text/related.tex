@@ -1,1 +1,42 @@
 \section{Related Work}
+Smart NICs (i.e. NICs with CPUs on them) have become a popular trend recently~\cite{nitro, bluefield, pensando}.
+They are hell bent on offloading processing logic in order to free up the host CPUs so that those cycles can be sold to paying customers.
+Smart NICs are terrible for latency sensitive applications, in fact, they increase latency.
+In order to make nanoservices practical, we believe that the NIC should be a domain specific architecture designed to minimize latency to the core, perform thread scheduling, and implement a transport protocol.
+Throwing a CPU on a NIC is not what we would consider to be a domain specific architecture.
+
+Recent trends have emerged which suggest that it is a good idea to break up large monolithic applications into smaller compute units.
+The concept of microservices emerged about a decade ago with the goal of creating more maintainable infrastructure, not necessarily to improve performance.
+As more and more applications were developed using the microservices framework, it became apparent that we need to find a way to minimize the latency overhead of RPCs and make their performance predictable.
+
+Serverless compute~\cite{aws-lambda, gcloud-functions, azure-functions} is another recent trend that enables developers to implement applications in a more fine grained manner than has every been feasible in the past.
+Serverless compute infrastructure has been used to implement fine grained video encoding~\cite{ExCamera}, compilers~\cite{gg}, and scientific computing applications~\cite{PyWren}.
+The nanoservices framework takes this approach to the absolute extreme and we believe that the nanoPU will help make this practical.
+
+\steve{Do we want to mention isolates?}
+
+There are are number of recent works that attempt to minimize tail RPC completion time: Shinjuku~\cite{shinjuku}, Shenango~\cite{shenango}, RPCValet~\cite{rpcvalet}.
+These works assume that incoming requests must be load balanced across cores.
+We believe that this assumption will generally be false for the vast majority of nanoservice applications.
+For the most part, nanoserver threads will need to directly send messages between one another.
+That is, each message will indicate its destination thread ID and hence the core ID.
+This is because in most cases, only one thread will have the state needed to processes a certain message.
+That being said, there will be some nanoservice apps that will want to send messages which can be processed by any one of $N$ replicas.
+In this situation, we believe that the load balancing decision should be made at the machine which is sending the request or within the network, and not on machine(s) where the replicas reside.
+One reason for this belief because the replicas many not even reside on the same machine, much less attached to the same NIC.
+Another reason for this belief is that load balancing decisions made at the destination machine are already too late, especially with the massive degrees of incast that we expect nanoservices to exhibit.
+Ideally, the nanoserver thread that is about to send the message will be aware of who is about to send a message to each replica so that it can make the most informed load balancing decision or perhaps decide to delay sending the message in the first place in order to avoid drops within the network or the destination NIC, wasting network bandwidth.
+This would require an immense amount of coordination, which is perhaps achievable with tightly synchronized clocks across all machines.
+This is our current area of active research.
+
+We are not the first to propose an integrated network interface.
+Scale-Out NUMA~\cite{scale-out-numa} integrates the network interface into the machine's local cache coherence hierarchy in order to accelerate RDMA style applications.
+This approach is similar in spirit to the recent Compute Express Link (CXL)~\cite{cxl} standard, which is designed to maintain memory coherence between the CPU memory and the memory on PCIe attached devices.
+Both of these approaches are sub-optimal for nanoservice applications, which require minimal latency between the network and the CPU pipeline, not memory.
+Thus, the nanoPU integrates the network interface and the CPU pipeline.
+
+The design of the nanoPU's network fast path into the CPU register file is inspired by the J-machine~\cite{jmachine} from 1989.
+This machine proposed to communicate between processors on the same chip via the register file in order to minimize inter-processor communication latency.
+The approach was eventually abandoned because it was believed to be challenging to maintain isolation between contexts running on the same core.
+We believe that our proposal to use per-context queues in NIC hardware overcomes this challenge.
+

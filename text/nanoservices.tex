@@ -1,25 +1,30 @@
 \section{Nanoservices}
+\label{sec:nanoservices}
+Nanoservices are a new framework for building compute-intensive, distributed applications with the following three characteristics:
+
+\vspace{0.5pt}
 \begin{itemize}
-    \item Nanoservices are a framework for building compute-intensive distributed applications.
-    \item We believe that the performance of many compute-intensive distributed applications is severely limited by scalability of modern systems.
-    \begin{itemize}
-        \item For instance, consider performing an N-body cosmological simulation of 1 million particles, which is considered to be a small benchmark in the field of astronomy~\cite{changa}. This application is designed to simulate motion of the particles under the influence of gravity. Processing can often be parallelized for each particle in the simulation, for instance to compute the force that each particle exerts on every other particle. Today, these simulations are run the modern super computers using parallel programming frameworks such as CHARM++~\cite{charm++}. However, these systems are only able to scale to O(10K) processors before performance starts to degrade~\cite{changa}. Therefore, modern systems are unable to exploit all possible parallelism in this application, thus limiting performance.
-        \item Similarly, consider multiplying two 100x100 matrices, which is a small operation in today's world of machine learning and AI. This simple operation requires performing 1 million multiplications that could potentially be parallelized. However, even a modern TPU v3 chip, which is explicitly designed to do matrix multiplications, only has about 64K multiply accumulate processors, so cannot fully parallelize this operation. The nanoservice infrastructure would allow application developers to harness about as many cores as there are multiply accumulate processors in a large TPU pod - O(10M). And since NanoPU cores are more flexible than a TPU's multiply accumulate processors, the nanoservice infrastructure is more general purpose than a TPU pod and can be used to run machine learning workloads such as neural network inference and training.
-        \item We can make a similar argument for graphics processing on GPUs if needed.
-    \end{itemize}
-    \item We believe that these scalability limitations exist for the following reasons:
-    \begin{enumerate}
-        \item Large and unpredictable RPC completion times force application developers to prepare for the worst and provision resources accordingly. There is also the well known performance degradation caused by the straggler effect that plagues many modern distributed applications. Additionally, large overheads for small RPCs force application developers to batch what would be many small messages into fewer large messages, thus sacrificing opportunities for parallel computation.
-        \item Modern network transport protocols are unable to handle massive degrees of incast (e.g. 10K-to-1) without ever overflowing or underflowing the receiver buffer.
-    \end{enumerate}
-    \item In this paper, we propose an architecture to deal with issue (1), while leaving issue (2) as a challenge for the research community.
-    \item Applications that are best suited for implementation using nanoservices are those that are highly parallelizable and compute intensive.
-    \item Target applications should be divisible into compute intensive nanotasks that all service network messages in less than 1 us and have a small enough working set such that they fit in on-chip SRAM so that memory accesses are as fast as accessing the L1 cache on an general purpose CPU. \chang{Working set must be contained within register files or L1 cache? I thought we were assuming the former. Also, if we tell the latter, some people may ask for the difference between ours and DDIO.}
-    \item Nanotasks should not perform DRAM memory accesses because a single DRAM memory access requires about 100 ns, which is already a large fraction of the maximum response time allowed by nanotasks.
-    \item In order to make nanoservices work, we need new infrastructure. This new infrastructure must:
-    \begin{itemize}
-        \item Minimize overheads for network messages in order to make it practical to send and process millions of requests per second.
-        \item Minimize average network latency to improve performance for the common case.
-        \item Minimize tail RPC completion time because end-to-end performance of distributed applications are often dominated by this metric. Minimizing tail RPC completion time will require infrastructure that is able to enforce strict performance isolation.
-    \end{itemize}
+    \item[\bf C1:] Each application is divisible into compute-intensive {\em nanotasks}.
+    \item[\bf C2:] Each nanotask is able to process and respond to network messages in under \SI{1}{\mu s}.
+    \item[\bf C3:] The working set of each nanotask fits in the L1 cache.\footnote{L1 cache is typically \SI{256}{kB}--\SI{1}{MB} at the time of writing, including the data and instruction cache.}
 \end{itemize}
+\vspace{0.5pt}
+
+Figure~\ref{fig:app-frameworks} highlights the key differences between nanoservices and two other major application development frameworks: monoliths and microservices.
+We believe that many applications can benefit from the nanoservices framework, including applications such as physical simulations~\cite{barnes-hut, molecular-dynamics}, neural-network inference \& training~\cite{tensorflow}, graphics processing~\cite{ray-tracing}, and state-space search algorithms~\cite{state-space-search}.
+As we will show in \S\ref{sec:evaluation}, total application runtime has the potential to be reduced by about three orders of magnitude if they are implemented using nanoservices.
+
+The central idea is as follows: A nanotask must execute in the shortest, and most deterministic time possible. 
+This implies that {\em everything} the nanotask needs must sit in registers and the L1 cache: Instructions in the L1 instruction cache, and data (in-progress messages, variables and program state) in registers or the L1 data cache. 
+Cache misses are expensive, and the goal is to avoid them--L2 cache and external memory are, respectively, ten and one hundred times slower than the L1 cache~\cite{jeff-dean-numbers}.
+
+Building nanoservices requires more than simply dividing applications into nanotasks that access small amounts of data.
+We also need to consider how to quickly and predictably transfer message data between the wire and an application thread, and how to efficiently schedule nanotasks on the available processor cores.
+It is not practical to run nanoservices on today's systems, which were designed to support applications that process RPCs in milliseconds, or at best tens of microseconds~\cite{eRPC, perfkit-grpc}, not hundreds of nanoseconds.
+Addressing these problems therefore requires hardware changes, which we address with our proposed design, the \name{}, in the following section.
+
+\begin{figure}
+  \includegraphics[width=0.9\linewidth]{./figures/app-frameworks}
+  \caption{A comparison of key characteristics of {\em nanoservices} vs. monoliths and microservices.}
+  \label{fig:app-frameworks}
+\end{figure}

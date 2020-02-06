@@ -1,7 +1,0 @@
-\section{Programming the NanoPU}
-\begin{itemize}
-    \item Applications must be written such that they process network messages in FIFO order.
-    \item Applications should have minimal memory requirements, such that the working set fits in on-chip SRAM. In fact, the code and data of all nanoservice threads pinned to the core must fit in on-chip SRAM.
-    \item Nanoservice applications are composed of many single threaded nanoservers that are pinned to a specific NanoPU core. These single threaded applications exchange messages directly with one another. Load balancing decisions are performed either at the application level or in the network switches.
-    \item The NanoPU transport protocol supports reliable one way message delivery. It also supports mechanisms to support RPC style request/response protocols layered on top of the transport.
-\end{itemize}
