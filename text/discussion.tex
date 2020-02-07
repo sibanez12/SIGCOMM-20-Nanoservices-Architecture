@@ -1,17 +1,15 @@
 \section{Discussion}
-This section discusses a few additional details about the \name{}'s NIC-Core interface, as well as some thoughts regarding the \name{} as a domain specific processor and using it to run nanoservice applications.
+This section discusses aspects of the \name{} and nanoservices that we believe will lead in interesting directions for future research.
 
 \subsection{\name{} NIC-Core Interface Design Considerations}
-As mentioned in \S\ref{sec:prototype}, the changes to the RISC-V Rocket core that were required to support our fast path to the register file were very minimal.
-The most significant change resulted from the fact that reading the network RX queue in the CPU pipeline's decode stage causes a state change which must be undone when there is a pipeline flush resulting from a branch misprediction.
-We handle this situation by simply modifying the RX queue to be able to effectively ``unread'' the last two words that were removed.
+\steve{Removed: As mentioned in \S\ref{sec:prototype}, the changes to the RISC-V Rocket core that were required to support our fast path to the register file were very minimal. The most significant change resulted from the fact that reading the network RX queue in the CPU pipeline's decode stage causes a state change which must be undone when there is a pipeline flush resulting from a branch misprediction. We handle this situation by simply modifying the RX queue to be able to effectively ``unread'' the last two words that were removed.}
 
-Our \name{} design reserves two general purpose registers for the head and tail of the network RX and TX queues respectively.
+Our \name{} design reserves two general purpose registers (GPRs) for the head and tail of the network RX and TX queues respectively.
 We also explored an alternative design where the head and tail registers are instead implemented using control status registers (CSRs).
-This design decision of whether to use GPRs or CSRs has a number of trade offs.
 Using GPRs often results in lower latency for applications because GPR values feed directly into the CPU's ALU and thus avoids the need to copy every word of every message from the CSR to a GPR before using the ALU.
 However, if the number of GPRs is very limited, for example in a light weight embedded system, then sacrificing two GPRs may result in an excessive amount of register spill into memory, thus inflating latency.
 Our experiments suggest that reducing the number of GPRs in the RISC-V Rocket core from 32 to 30, does not have a significant impact on the amount of register spill for our benchmark suite of nanoservice applications.
+However, this design decision may need to be reconsidered in other settings.
 
 Our \name{} prototype is built on top of the RISC-V Rocket core, which is a simple 5-stage, in-order RISC processor.
 While our prototype required very minor modifications to the CPU pipeline, the changes may need to be more invasive on an out-of-order RISC processor in order to ensure that words are read from the RX queue in the correct order.
@@ -27,12 +25,12 @@ In this paper, we focus on what we believe to be the most important components o
 That being said, we believe that future research on this topic should consider tailoring other aspects of the architecture including the memory hierarchy, on-chip network, CPU pipeline, and ISA for compute-intensive distributed applications.
 
 Furthermore, it is not clear that writing C code is the best way to program the \name{}. Network applications written for the \name{} must process message data in FIFO order, have minimal memory requirements, and all communication is done via explicit message passing.
-Perhaps there is a higher-level domain specific language that developers can use to facilitate writing stateful message processing applications. This could be an area of interesting research.
+Perhaps there is a higher-level, domain specific language that developers can use to facilitate writing stateful message processing applications.
 
-As a result of being a domain specific processor, there are classes of applications that we believe to be ill-suited for the \name{}, such as \emph{memory-intensive} distributed applications.
+As a result of being a domain specific processor, there are classes of applications that we believe will be ill-suited for the \name{}, such as \emph{memory-intensive} distributed applications.
 For example, a Key-Value store application~\cite{memcached} may or may not be well suited for the \name{}, depending on the scale and latency requirements.
 If the size of the database is small enough to fit in the L1 caches of a reasonable amount of \name{} cores then it would likely be good fit and would provide substantially lower latency than a DRAM based Key-Value store.
-However, if the size of the database is very large, then the \name{}'s fast path will probably not provide much benefit, although the \name{}'s NIC-driven scheduling policy may still be beneficial.
+However, if the size of the database is so large that it must reside in DRAM, then the \name{}'s fast path will probably not provide much benefit.
 
 \subsection{Running Nanoservice Applications}
 Rather than using a standard Linux distribution to test our scheduling policies we decided to use a minimal operating system of our own design - the nanoKernel.

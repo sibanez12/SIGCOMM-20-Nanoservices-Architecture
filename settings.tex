@@ -171,3 +171,6 @@
 %  escapeinside={\%*}{*)},            % if you want to add a comment within your code
 %  morekeywords={*,...}               % if you want to add more keywords to the set
 %}
+
+% Commands for text
+\newcommand{\ballnumber}[1]{\tikz[baseline=(myanchor.base)] \node[circle,fill=.,inner sep=1pt] (myanchor) {\color{-.}\bfseries\footnotesize #1};}

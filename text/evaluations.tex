@@ -1,7 +1,6 @@
 \section{Evaluation}
 \label{sec:evaluation}
-This section describes our evaluation methodology and results.
-These evaluations assume a 3 GHz clock, which is a typical CPU clock speed.
+We evaluated our hardware design for a \name{} running at 3 GHz. 
 
 \begin{figure*}
   \includegraphics[width=\linewidth]{./figures/latency}
@@ -12,9 +11,9 @@ These evaluations assume a 3 GHz clock, which is a typical CPU clock speed.
 \steve{change IceNIC label to RISC-V w/ IceNIC and change L-NIC label to \name{} in Figure~\ref{fig:latency}}
 
 \subsection{Microbenchmarks}
-This section describes a set of microbenchmarks that characterize various aspects of the \name{} architecture.
+We wrote and ran microbenchmarks for three main aspects of our \name{} design. 
 
-\paragraph{Timing Analysis.} We synthesized both our \name{} RISC-V prototype as well as a standard RISC-V core with a traditional NIC (IceNIC) to a modern FPGA (Xilinx Ultrascale+) in order to analyze the critical paths in each design.
+\noindent\paragraph{Timing Analysis.} We wanted to know if a \name{} runs more slowly than an unmodified CPU core. We compared two designs: (1) Original: An unmodified RISC-V core and standard NIC (IceNIC), versus (2) \name{}: our modified RISC-V core with the L-NIC. Both were synthesized to run on a modern FPGA (Xilinx Ultrascale+). In both designs, the critical timing path was  in order to analyze the critical paths in each design.
 We found that the critical path in both designs is in the L2 cache, and hence our \name{} prototype is able to achieve the same clock rate as a traditional RISC-V system.
 
 \paragraph{Basic Latency/Throughput Performance Analysis.} The latency of the \name{}'s TX path is 11 cycles for a single word message, which is measured from the cycle when an application writes the word to when the word is placed on the network (not including the MAC processing).
@@ -29,14 +28,18 @@ Table\ref{tab:throughput} shows the TX and RX throughput for 64B packets for bot
 The \name{} is able to achieve 6-8$\times$ higher throughput than the traditional network interface.
 This performance gain is mainly a result of the significantly reduced per-packet overheads in the \name{}.
 A \name{} application does not need to instruct a DMA engine to send/receive packets, it simply reads and writes the NIC queues directly.
+Furthermore, IceNIC does not support descriptor rings which means that the application must instruct the DMA engine to send/receive every packet rather than batches of packets.
+We could expect the IceNIC throughput to increase by a small factor if it supported descriptor rings.
+However, batching packets together is unideal for nanoservice applications because it causes latency variation, which is one of metrics we would like to minimize.
+
+% \steve{My main concern with using IceNIC as a baseline comparison is that it does not support TX/RX descriptor rings, which means that the application must send packet descriptors one at a time to the NIC DMA engine for TX and the NIC DMA engine only fills up one packet buffer at a time for RX. I don't think this matters too much for latency of a single packet, but throughput will be affected. For example, the TX/RX throughput for 64B packets would be higher for IceNIC if it supported this feature. Additionally, the IceNIC applications might be written differently. For example, rather then using the same static buffer for every packet, they might use N packet buffers and process them in batches. So it's tough to say what the performance impact would be on the evaluated applications. I tried measuring the performance gain resulting from support for descriptor rings by writing a DPDK (actually MoonGen) application that sends/receives 1 pkt at a time vs batches of packets. The results were unfortunately inconclusive because DPDK is able to saturate the 10G link when sending batches of 64B pkts. Sending one 64B pkt at a time resulting in about 2Gb/s throughput. But this isn't really the right experiment to be running. The best thing to do if we had more time would be actually implement our nanoservice apps using DPDK and measure the latency using NetFPGA. If we did this, we would be able to compare the performance directly to our \name{} and IceNIC. Perhaps it's worth doing this for the camera ready?}
 
 \begin{table}
 \begin{center}
-\begin{tabular}{|c|c|c|}
-\hline
-                          & \textbf{RX (Gbps)} & \textbf{TX (Gbps)} \\ \hline
-\textbf{\name{}}          & 116                & 186                           \\ \hline
-\textbf{RISC-V w/ IceNIC} & 14                 & 28                            \\ \hline
+\begin{tabular}{c|c|c}
+                          & \textbf{RX (Gbps)} & \textbf{TX (Gbps)} \\ \toprule
+\textbf{\name{}}          & 116                & 186                \\
+\textbf{RISC-V w/ IceNIC} & 14                 & 28                 \\
 \end{tabular}
 \caption{TX and RX throughput achievable by both our \name{} prototype and a traditional RISC-V core with IceNIC for 64B packets.}
 \label{tab:throughput}
@@ -116,30 +119,32 @@ Because of the very short execution latency and the \name{}'s superior TX/RX thr
 %  \label{fig:othello-reduce-latency}
 %\end{figure}
 
-\paragraph{N-body Simulation.} This large class of applications is extremely well-suited to implementation using nanoservices.
+\paragraph{N-body Simulation.} This large class of applications is very well-suited to implementation using nanoservices.
 An N-body simulation is a type of physical simulation commonly used in scientific computing and is typically run on HPC clusters.
 Astronomers uses N-body simulations to model the gravitational interaction of celestial bodies.
 These simulations are very computationally heavy, especially the steps that compute the gravitational force each body exerts on every other body.
 A commonly used data structure for implementing an N-body simulation is a quad-tree, as described in the Barnes-Hut algorithm~\cite{barnes-hut}.
 This algorithm reduces the computational complexity required for the gravity computation step from $O(N^2)$ to $O(\log N)$.
-A naive nanoservices implementation of the Barnes Hut algorithm would simply implement each node of the quad tree as a separate nanotask.
+A naive nanoservices implementation of the Barnes Hut algorithm would simply implement each node of the quad tree as a separate nanotask and pass messages between one another to compute gravitational forces, as shown in Figure~\ref{fig:barnes-hut}.
 In this case, the state required by each node is very minimal as it mainly consists of the node's position and mass, which is easily cache resident.
-The computation required by each node consists of computing the force that the node exerts on the body indicated in the arriving message, which requires an evaluation of the following equation:
+The computation required by each node primarily consists of computing the force that the node exerts on the body indicated in the arriving message, which requires an evaluation of the following equation:
 $$ F_G = G\frac{m_1 \cdot m_2}{r^2} $$
 Where, $G$ is the gravitational constant, $m_1$ and $m_2$ are the masses of the two bodies, and $r$ is the distance between them.
 Thus, the computation only requires a few floating point operations and the response time for each message is easily sub-microsecond.
+Note that this is a radical departure from how the Barnes Hut algorithm is implemented today~\cite{changa}, which maintains the quadtree as a large in memory data structure that is distributed across multiple machines.
 
 We implemented a single node of an N-body physical simulation to evaluate the performance gain provided by the \name{}.
 The node receives $N$ update messages which indicate the position of each body, and then evaluates the equation shown above to compute the gravitational force.
 The result is included in a response message that is sent back into the network.
 Latency is measured from when the first byte of the first request message enters the NIC to when the last byte of the last response message leaves the NIC.
 As shown in Figure~\ref{fig:latency}, the \name{} provides a $2.5\times$ latency reduction over the traditional IceNIC system.
+\S\ref{ssec:large-eval} builds upon this evaluation to extend it to a larger scale. 
 
-%\begin{figure}
-%  \includegraphics[width=\linewidth]{./figures/nbody-latency}
-%  \caption{\name{} vs Traditional N-body simulation node latency.}
-%  \label{fig:nbody-latency}
-%\end{figure}
+\begin{figure*}
+ \includegraphics[width=\linewidth]{./figures/barnes-hut}
+ \caption{Example message passing pattern to compute the gravitational forces exerted on body F using a simple nanoservices implementation of the Barnes Hut algorithm~\cite{barnes-hut}. Each node of the quadtree is implemented as a separate nanotask. Leaf nodes represent bodies being simulated and internal nodes represent regions of space. To compute the force exerted on body F, it will send a message that is intended to traverse the quadtree. If the center of mass of the receiving node is sufficiently far away, it will compute the force that it exerts on body F and return the result in a response message. Otherwise, the node will forward the request to all of its children which recursively implement the same procedure.}
+ \label{fig:barnes-hut}
+\end{figure*}
 
 \subsection{Thread Scheduling Evaluations}
 This section demonstrates the reduction in tail latency as a result of the NIC-driven thread scheduling policy used in our \name{} prototype.
@@ -173,15 +178,16 @@ The purpose of this evaluation is simply to demonstrate the benefit of allowing 
 %\end{figure}
 
 \subsection{Large Scale Nanoservice Evaluation}
+\label{ssec:large-eval}
 In order to demonstrate the expected performance gains of a large scale nanoservice deployment we will use the N-body simulation application and the naive nanoservice implementation described in \S\ref{ssec:bare-metal-evals}.
-Using this approach, the root node of the quad tree becomes the bottleneck, because it must process one message from each body being simulated.
-In this case, the root node dictates the total runtime of the gravity computation.
-We compare the theoretical performance of this naive nanoservice application with the performance obtained by using a commonly used N-body gravitational simulator, ChanGa~\cite{changa}.
+Using this approach, the root node of the quadtree becomes the bottleneck, because it must process one message from each body being simulated.
+In this case, the root node dictates the total runtime of the gravity computation step.
+We compare the theoretical performance of this naive nanoservice application with the performance obtained when using a popular N-body gravitational simulator, ChanGa~\cite{changa}.
 Table~\ref{tab:nbody-changa} shows the average gravity computation time for 80K bodies using both the ChanGa simulator (with recommended parameter settings) and the naive nanoservices implementation.
-We obtain the expected nanoservice performance by extrapolating the performance of the bare metal application N-body node, evaluated in \S\ref{ssec:bare-metal-evals}, to 80K messages.
-This mimics the processing required by the root node of the quad tree.
+We obtain the expected nanoservice performance by extrapolating the performance of the \name{} bare metal application N-body node, evaluated in \S\ref{ssec:bare-metal-evals}, to 80K messages.
+This mimics the processing required by the root node of the quadtree.
 We expect that even this naive nanoservice implementation would achieve about 3 orders of magnitude reduction in total gravity computation time.
-Further performance gains can be obtained by replicating certain nodes of the quad tree.
+Further performance gains can be obtained by replicating certain nodes of the quadtree.
 The main reason for this massive performance gain is because modern N-body simulators, like ChanGa, are not designed to perform extremely fine grained parallel processing in the way that nanoservices are.
 Note that this preliminary evaluation assumes that the \name{}'s transport protocol is able to handle a 80K-to-1 incast without ever overflowing or underflowing the receiver buffer.
 This type of massive incast is not special to this one application, but we expect that this will be common across many nanoservice applications.
@@ -189,11 +195,10 @@ Designing transport protocols to deal with this degree of incast may be challeng
 
 \begin{table}
 \begin{center}
-\begin{tabular}{|c|c|}
-\hline
-                      & \textbf{Avg Gravity Computation Time} \\ \hline
-\textbf{Nanoservices} & 4 ms                                  \\ \hline
-\textbf{ChanGa}       & 30 sec                                \\ \hline
+\begin{tabular}{c|c}
+                      & \textbf{Avg. Gravity Computation Time} \\ \toprule
+\textbf{Nanoservices} & 4 ms                                   \\
+\textbf{ChanGa}       & 30,000 ms                                 \\
 \end{tabular}
 \caption{Average gravity computation time in an N-body simulation of 80K bodies. Compares a theoretical nanoservices deployment to a real implementation using ChanGa~\cite{changa}.}
 \label{tab:nbody-changa}

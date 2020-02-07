@@ -1,44 +1,44 @@
-\subsection{Transport Termination in the NIC}
+\subsection{Terminating Transport in the NIC}
 \label{ssec:nic-transport}
-If \name{} is to meet our extremely aggressive latency target of $<1\mu$s from when an RPC message arrives from Ethernet until a response is sent back out, there is clearly no time to run a traditional transport networking stack in software. 
+If the \name{} is to meet our aggressive latency target of $<1\mu$s from when an RPC message arrives over Ethernet until a response is sent back out, there is clearly no time to run a traditional transport networking stack in software. Therefore, \name{} runs a low-latency transport protocol in hardware, in the NIC, with support from the NIC's programmable pipeline. Note that transport protocols for low-latency applications (e.g., DCQCN for RDMA) are already fully implemented in hardware~\cite{cvl,connectx6} on state-of-the-art high-speed NICs available in today's market, vouching for the feasibility of a fully-offloaded transport protocol running in hardware.
 
-Therefore, \name{} runs a low latency transport protocol in hardware in the NIC. But we don't mandate a specific transport protocol; we seem to be entering an era when different cloud providers prefer different transport protocols~\cite{timely,hpcc,dcqcn} and so we aim to provide some choice, within our tight latency budget.
+We, however, don't mandate a specific transport protocol in this paper because we seem to be entering an era when different cloud providers prefer different transport protocols~\cite{timely,hpcc,dcqcn}. Instead we aim to provide some choices, within our tight latency budget.
 
-The NIC therefore places minimal constraints on the transport protocol, while providing programmable hardware blocks to allow some choice by the network owner. We do assume that the transport layer provides a reliable message abstraction to each thread. It therefore must handle retransmissions and decide when packets should be sent. 
+The NIC therefore places minimal constraints on the transport protocol, while providing programmable hardware blocks to allow some choice by the network owner. We assume that the transport layer provides a reliable message abstraction to each thread, as well as network congestion control. It therefore must handle retransmissions and decide when packets should be sent. To guide our design, we assume it must be possible for the NIC to be programmed to implemented Homa~\cite{homa} and NDP~\cite{ndp}. Between them, they mandate most of the building blocks we need, including reliable transmission, immediate startup rate, receiver driven scheduling, a message abstraction to the CPU, and data-trimming (in the switches).
 
-\nick{I will work on this part more in the morning. I think it can be shortened. If anyone wnats to take a shot, go for it....}
+We observe that realizing a transport protocol in hardware requires the following functions in the programmable pipeline of a NIC.
 
-This section describes the hardware mechanisms in the \name{} architecture that enable the NIC to terminate a low latency transport protocol such as Homa~\cite{homa} or NDP~\cite{ndp}.
-We describe the hardware mechanisms, however the implementation and evaluation of a specific transport protocol is outside the scope of this paper and is a topic for future research.
+\begin{itemize}
+    \item Timers and timer-based event processing logic to realize various timer-based state transitions, such as retransmissions and timeouts.
+    \item Pacers to rate-limit individual flows.
+    \item Flow state machine to maintain per-flow state, including current rate or congestion-window size, sequence and acknowledgment numbers, connection-establishment status, counters, etc.
+    \item Packetization/retransmission buffer to break a message into packets and hold packets until they are acknowledged by a receiver.
+    \item Reordering buffer to handle out-of-order delivery of packets.
+    \item Packet generators to realize receiver-driven transport protocols that keep generating credit packets for senders.
+\end{itemize}
 
-By terminating the transport protocol in hardware, the overhead required for applications to send and receive messages (especially small ones) is significantly reduced.
-While it is expensive for software to handle transport tasks such as per-message (or per-RPC) timers, packet retransmissions, message reassembly and packetization; hardware can implement these tasks very efficiently.
+The event-driven PISA pipeline~\cite{event-driven-pisa} already provides most of the mechanisms we need for sophisticated stateful operations (\eg, state machines, timer events and packet generation), and can be extended to add support for message reassembly and retransmit buffers~\cite{schuehler2004modular, intel-rapidio}. Because nanoservice messages sizes will be very small, the amount of SRAM needed to realize these buffers will be sufficiently small for a cost- and power-efficient hardware implementation. With these mechanisms, we believe the \name{} can run a complete transport stack on the NIC with very low latency. While we have a design for each of these building blocks, we will explain the details of those in our follow-on paper.
 
+\iffalse
 The key components that enable the NIC to terminate a transport protocol are described below.
 
-\paragraph{Event-driven PISA Pipeline~\cite{event-driven-pisa}}
-This programmable data-plane architecture enables us to write programs that process data-plane events in the background of data packet processing, that is, without affecting the rate at which data packets are processed.
+The \textbf{event-driven PISA pipeline~\cite{event-driven-pisa}} is a programmable data-plane architecture that enables us to write programs that process data-plane events in the background of data packet processing, that is, without affecting the rate at which data packets are processed.
 It does this by scheduling and aggregating memory accesses.
 This mechanism helps to enable transport logic processing which must perform more sophisticated stateful operations than basic packet forwarding.
 
-\paragraph{Timer Event Generation Module.}
-This is a hardware mechanism within the aforementioned event-driven PISA pipeline that is able to maintain $N$ timers (e.g. one per active message or one per active RPC).
+The \textbf{timer event generation module} is a hardware mechanism within the aforementioned event-driven PISA pipeline that is able to maintain $N$ timers (e.g. one per active message or one per active RPC).
 The timer module supports the following three operations per-timer:
 \begin{itemize}
     \item Schedule - add a new timer
     \item Reschedule - restart an existing timer
     \item Cancel - remove the state associated with an existing timer
 \end{itemize}
-All timers must be constrained to have the same period in order to make the hardware design scalable.
-We do not anticipate this to be a major limitation.
 These timer events are processed in the background of data packet processing and are used to determine when a data packet retransmission must be sent or when a message (or RPC) has expired and its state must be cleaned up.
 
-\paragraph{Programmable Packet Generation Module.}
-This module is used to generate acknowledgement and/or message completion packets.
+The \textbf{programmable packet generation module} is used to generate acknowledgement and/or message completion packets.
 
-\paragraph{Packetization Buffer.}
-This module buffers messages sent from the CPU and generates packets that are subsequently processed by the event-driven PISA pipeline before being transmitted.
+The \textbf{packetization buffer} stores messages sent from the CPU and generates packets that are subsequently processed by the event-driven PISA pipeline before being transmitted.
 It also supports retransmitting data packets within a message when a packet drop is detected.
 
-\paragraph{Message Reassembly Buffer.}
-This module is able to reassemble potentially multi-packet messages with duplicate packets into a single message that is then delivered to the appropriate RX queue for the destination context.
+The \textbf{message reassembly buffer} is able to reassemble potentially multi-packet messages with duplicate packets into a single message that is then delivered to the appropriate RX queue for the destination context.
+\fi

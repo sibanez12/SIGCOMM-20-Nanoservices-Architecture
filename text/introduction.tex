@@ -27,13 +27,19 @@ If instead, an RPC call could complete in less than \SI{1}{\mu s}, then it makes
 
 More generally, consider a distributed application consisting of $N$ potentially parallelizable tasks, each of which can be executed locally (in $x$ $\mu$s) or on a remote core via RPC (in $r \cdot x$ $\mu$s, where $r \ge 1$). 
 If the degree of parallelism, $K$, is the number of issued RPCs (\ie, the number of remote cores), we minimize job-completion time when $(N - K)\cdot x = r \cdot x$ (\ie, $K = N - r$). 
-Increasing the degree of parallelism, $K$, further yields no benefit; if we send more RPCs, the local core just sits idle waiting for the RPCs to complete. 
+Further increasing the degree of parallelism, $K$, yields no benefit; if we send more RPCs, the local core just sits idle waiting for the RPCs to complete. 
 For example, if $r = 10$ (\ie, RPCs take 10 times as long as local execution) then we should send $N-10$ RPCs while executing 10 tasks locally. 
 If we reduce latency so that $r=1$, the total job-completion time is reduced by 90\%.  
 
 In practice, RPC completion times, $f_i$, are not fixed, but characterized by a probability distribution, $f_i \in \mathcal{F}$. 
-The total job completion time is $(N - K)x =\max{f_i}$ where $1\le i \le K$. Thus, if we want to improve performance, we must reduce the RPC tail latency $\max{f_i}$. 
+The total job completion time is $(N - K) \cdot x =\max{f_i}$ where $1\le i \le K$. Thus, if we want to improve performance, we must reduce the RPC tail latency $\max{f_i}$. 
 This observation is not new and has been the motivation for much recent work~\cite{shinjuku, shenango, rpcvalet}. 
+
+\begin{figure}
+  \includegraphics[width=0.9\linewidth]{./figures/nano-comptime}
+  \caption{Total job completion time of an example application with 1000 independent tasks (each with \SI{500}{\mu s} processing time) for varying number of cores (\ie, one per RPC) under different RPC completion time distributions.}
+  \label{fig:nanoservice-sim}
+\end{figure}
 
 The goal of our research is to design, build, and evaluate a domain-specific processor, which we call a {\em \name{}}, optimized for minimizing the completion time of highly-parallel, compute-intensive jobs. The \name{} (\S\ref{sec:nanoPU}) is designed for massive scale-out computing. 
 Specifically, millions of \name{}s could be deployed to run what we call {\em nanoservices}: highly distributed, compute-intensive applications that process RPC requests in under \SI{1}{\mu s} using fine-grained, cache-resident threads.
@@ -58,13 +64,7 @@ This is mostly a networking problem, one that leads us to tackle three questions
 \Cref{fig:nanoservice-sim}, while based on synthetic numbers, illustrates what we aim to achieve.
 The first graph shows various distributions of RPC completion times. 
 The red graph is intended to be representative of the current state-of-the-art RPC completion times~\cite{eRPC}. The blue graph demonstrates the impact on total application runtime when the standard deviation of the RPC completion time distribution is reduced by an order of magnitude.
-If we can drive down the average {\em and} the standard deviation, represented by the green line, then the job-completion time falls linearly as we add cores, until eventually the per-RPC overhead limits parallelism. 
-
-\begin{figure}
-  \includegraphics[width=0.9\linewidth]{./figures/nano-comptime}
-  \caption{Total job completion time of an example application with 1000 independent tasks (each with \SI{500}{\mu s} processing time) for varying number of cores (i.e. issued RPCs). These plots demonstrate the impact of the RPC completion time distribution on the total job completion time.}
-  \label{fig:nanoservice-sim}
-\end{figure}
+If we can drive down the average {\em and} the standard deviation, represented by the green line, then the job-completion time falls linearly as we add cores, until eventually the per-RPC overhead limits parallelism.
 
 % Shahbaz: seems mostly repetitive to what we have already said above, possibly axe it?
 %\iffalse
@@ -94,7 +94,9 @@ In summary, we make the following contributions:
     \item The design and implementation of a \name{} (\S\ref{sec:nanoPU}) with a \SI{100}{Gb/s} NIC datapath (\S\ref{ssec:nic-datapath}), a message-based interface directly between the NIC and CPU register file (\S\ref{ssec:niccore-interface}) and a NIC-driven thread scheduler (\S\ref{ssec:thread-scheduler}).
     \item An overview of the hardware mechanisms designed to support a low-latency transport protocol on the NIC (\S\ref{ssec:nic-transport}).
     \item An open-source \name{} prototype (\S\ref{sec:prototype}), based on a RISC-V Rocket Core~\cite{rocket-chip}.
-    \item An evaluation of our \name{} prototype against a traditional RISC-V CPU with a DMA-based NIC, for a suite of nanoservice applications (\S\ref{sec:evaluation}). Our evaluation demonstrates that \name{} reduces both average and standard deviation in application processing times by about an order of magnitude.
+    \item An evaluation of our \name{} prototype against a traditional RISC-V CPU with a DMA-based NIC, for a suite of nanoservice applications (\S\ref{sec:evaluation}). Our evaluation demonstrates that \name{} reduces both average and standard deviation in application-processing times by about $2-10\times$ and $20\times$ respectively.
+    \shahbaz{should we be talking in terms of latency or completion times here?}
+    \steve{completion times because that's what we are measuring in the evaluations}
 \end{itemize}
 
 %\begin{figure}

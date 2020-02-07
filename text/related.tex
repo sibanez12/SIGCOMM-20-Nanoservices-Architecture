@@ -5,15 +5,9 @@ Smart NICs are terrible for latency sensitive applications, in fact, they increa
 In order to make nanoservices practical, we believe that the NIC should be a domain specific architecture designed to minimize latency to the core, perform thread scheduling, and implement a transport protocol.
 Throwing a CPU on a NIC is not what we would consider to be a domain specific architecture.
 
-Recent trends have emerged which suggest that it is a good idea to break up large monolithic applications into smaller compute units.
-The concept of microservices emerged about a decade ago with the goal of creating more maintainable infrastructure, not necessarily to improve performance.
-As more and more applications were developed using the microservices framework, it became apparent that we need to find a way to minimize the latency overhead of RPCs and make their performance predictable.
-
-Serverless compute~\cite{aws-lambda, gcloud-functions, azure-functions} is another recent trend that enables developers to implement applications in a more fine grained manner than has every been feasible in the past.
+Microservices and serverless compute~\cite{aws-lambda, gcloud-functions, azure-functions} is another recent trend that enables developers to implement applications in a more fine grained manner than has every been feasible in the past.
 Serverless compute infrastructure has been used to implement fine grained video encoding~\cite{ExCamera}, compilers~\cite{gg}, and scientific computing applications~\cite{PyWren}.
 The nanoservices framework takes this approach to the absolute extreme and we believe that the nanoPU will help make this practical.
-
-\steve{Do we want to mention isolates?}
 
 There are are number of recent works that attempt to minimize tail RPC completion time: Shinjuku~\cite{shinjuku}, Shenango~\cite{shenango}, RPCValet~\cite{rpcvalet}.
 These works assume that incoming requests must be load balanced across cores.
@@ -22,7 +16,7 @@ For the most part, nanoserver threads will need to directly send messages betwee
 That is, each message will indicate its destination thread ID and hence the core ID.
 This is because in most cases, only one thread will have the state needed to processes a certain message.
 That being said, there will be some nanoservice apps that will want to send messages which can be processed by any one of $N$ replicas.
-In this situation, we believe that the load balancing decision should be made at the machine which is sending the request or within the network, and not on machine(s) where the replicas reside.
+In this situation, we believe that the load balancing decision should be made at the sending machine or within the network, not on machine(s) where the replicas reside.
 One reason for this belief because the replicas many not even reside on the same machine, much less attached to the same NIC.
 Another reason for this belief is that load balancing decisions made at the destination machine are already too late, especially with the massive degrees of incast that we expect nanoservices to exhibit.
 Ideally, the nanoserver thread that is about to send the message will be aware of who is about to send a message to each replica so that it can make the most informed load balancing decision or perhaps decide to delay sending the message in the first place in order to avoid drops within the network or the destination NIC, wasting network bandwidth.

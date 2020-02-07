@@ -1,12 +1,14 @@
 \begin{abstract}
 \shahbaz{needs to be revised?}
-We present the nanoservice Processing Unit (\name{}), a domain specific processor designed to accelerate compute-intensive, distributed applications.
-The \name{} provides an order of magnitude lower average and standard deviation in RPC completion times over existing systems.
-We also introduce nanoservices, applications that are parallelizable into fine grained compute units with sub-microsecond response times and cache resident working sets.
-We believe that this class of applications will become increasingly popular, as many distributed applications have inherent parallelism that cannot be harnessed today because of large, unpredictable RPC completion times and substantial per-message overheads.
+We present the nanoservice Processing Unit (\name{}), a domain-specific processor designed to accelerate compute-intensive, distributed applications.
+The \name{} provides an order of magnitude lower average and standard deviation in RPC-completion times over existing systems.
+We also introduce nanoservices, applications that are parallelizable into fine-grained compute units with sub-microsecond response times and cache resident working sets.
+We believe that this class of applications will become increasingly popular, as many distributed applications have inherent parallelism that cannot be harnessed today because of large, unpredictable RPC-completion times and substantial per-message overheads.
 
-The \name{}, as a new networking-optimized compute platform, helps to make nanoservices a reality.
-It contains a fast path from the network directly to CPU core, minimizing communication latency, and it delegates thread scheduling to the NIC, minimizing tail RPC completion times.
+The \name{}, as a new networking-optimized compute platform, helps make nanoservices a reality.
+It contains a fast path from the network directly to CPU core, minimizing communication latency, and it delegates thread scheduling along with transport logic to the NIC, minimizing tail RPC-completion times and per-message overheads.
 The resulting architecture, which requires minimal changes to the CPU core, thus provides the necessary starting point for the development of nanoservice applications.
-We built a prototype \name{} on top of an open source RISC-V CPU and evaluated its performance for a suite of real nanoservice applications using cycle-accurate hardware simulations.
+We built a prototype \name{} on top of an open-source RISC-V CPU and evaluated its performance for a suite of real nanoservice applications using cycle-accurate hardware simulations.
+\shahbaz{highlight key evaluations, i.e., we perform X\% faster than modern CPUs with traditional NICs?}
+\steve{The second sentence mentions an order of magnitude reduction in avg and std dev in RPC completion times. Is is worth repeating here?}
 \end{abstract}

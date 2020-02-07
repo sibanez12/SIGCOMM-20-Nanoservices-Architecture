@@ -13,9 +13,16 @@ Depending on the context, it may make sense to build \name{}s with one core per 
 For example, it would be practical today to design a chip with 500 cores~\cite{celerity, kilocore} and over a hundred \SI{100}{Gb/s} Ethernet interfaces;\footnote{Commercial switch chips exist with $128\times 100$ Gb/s Ethernet MACs today.} in this example, the ratio would be five cores per NIC. 
 Of course, many other ratios are possible and the ideal ratio depends on the application, technology, and economics. 
 
+\begin{figure}
+  \includegraphics[width=0.9\linewidth]{./figures/nanopu-arch}
+  \caption{A high-level architecture of \name{} having a NIC datapath with an event-driven MAU pipeline, a NIC--Core Interface with RX/TX context FIFOs per core and a thread scheduler, as well as CPU cores running the nanokernel and nanotasks.}
+  \label{fig:nanoPU}
+\end{figure}
+\shahbaz{we discuss CSR a lot in the later part of this section. maybe we should point out where these CSR register sit in Figure 3?}
+
 The \name{} is a domain-specific processor. 
-With the slowing of Moore's Law, new domain-specific processors are being widely used as accelerators for specific, high-volume workloads, such as graphics~\cite{nvidia-geforce}, machine-learning~\cite{tensorflow} and networking~\cite{RMT}. 
-While the \name{} is not nearly as radical a departure from a general-purpose CPU as, say, a GPU, TPU or programmable switch (after all, our design relies heavily on an existing core), the \name{} shares the approach of tailoring the chip design for a specific class of applications.\footnote{As an aside, it is only possible to consider prototyping a \name{} in a university because of two recent trends: RISC-V provides a remarkably stable starting point for heavy-lifting, and the narrow performance gap between the leading edge process (currently \SI{7}{nm}) and the closest already-paid-for process (\SI{16}{nm}) makes it economically feasible to build an interesting \name{}.}
+With Moore's Law slowing down, new domain-specific processors are being widely used as accelerators for specific, high-volume workloads, such as graphics~\cite{nvidia-geforce}, machine-learning~\cite{tensorflow} and networking~\cite{RMT}. 
+While the \name{} is not nearly as radical a departure from a general-purpose CPU as, say, a GPU, TPU or programmable switch (after all, our design relies heavily on an existing core), the \name{} shares the approach of tailoring the chip design for a specific class of applications.\footnote{As an aside, it is only possible to consider prototyping a \name{} in a university because of two recent trends: RISC-V provides a remarkably stable starting point, and the narrow performance gap between the leading edge process (currently \SI{7}{nm}) and the closest already-paid-for process (\SI{16}{nm}) makes it economically feasible to build an interesting \name{}.}
 
 If \name{} is so fast, why are not all CPUs designed this way? 
 It is because general-purpose CPUs are optimized for general-purpose workloads, most of which are memory-intensive. 
@@ -28,22 +35,19 @@ Our approach in the \name{} is to tightly couple compute directly to the network
 
 The \name{} has the following key characteristics that we visit, in turn, in the next few subsections: 
 \begin{itemize}
-    \item {\bf NIC Datapath:} A programmable event-driven PISA ``Match-Action Unit'' (MAU) pipeline~\cite{event-driven-pisa} on the NIC to process packet headers as they arrive and depart over the network, terminate tunnels, encrypt/decrypt and compress/decompress data; and a low-latency transport protocol in hardware, such as Homa~\cite{homa} or NDP~\cite{ndp}. The NIC Datapath presents a packet interface to the NIC Message Reassembler and Packetizer.\shahbaz{this is too much info at this point; also I'd recommend not empahsizing things that we haven't built.}
+    \item {\bf NIC Datapath:} A programmable event-driven PISA "match action unit" (MAU) pipeline~\cite{event-driven-pisa} on the NIC to process packet headers as they arrive and depart over the network, terminate tunnels, encrypt/decrypt and compress/decompress data; and a low-latency transport protocol in hardware, such as Homa~\cite{homa} or NDP~\cite{ndp}.
     
-    \item {\bf NIC Message Reassembler and Packetizer:} Hardware FIFOS programmatically bound to each running nanotask CPU context that handle the reassembly of inbound packets into messages and the packetization of outbound messages into packets. This allows the NIC Message Reassembler and Packetizer to present a message interface to each nanotask executing on the CPU.\shahbaz{the NIC-Core interface seemed better, as it relates with figure and para headings? also the statements here are more verbose now.}
+    \item {\bf NIC--Core Interface:} A very low latency path---just a few clock cycles---from the network right to the very heart of the CPU core---its register file. 
+    This reduces latency by 1--2 orders of magnitude; we do not believe there is a lower latency path to a running thread.
+    % The NIC is responsible for exposing a message interface (as opposed to a packet interface) to the core(s) it is connected to.
     
-    \item {\bf Hardware Thread Scheduling:} The NIC ensures that arriving message data reaches the core quickly. We also need to make sure the core switches to the message's nanotask recipient to process the message quickly; to support this requirement, the hardware includes a very low-latency thread scheduler~\cite{resq}.
+    \item {\bf Hardware Thread Scheduling:} In addition to moving network messages into the CPU quickly, the \name{} must also make sure that the appropriate application thread is running on the core so that it can start processing messages promptly. For this, the NIC hardware includes a very low-latency, thread scheduler.
 \end{itemize}
 
-These characteristics together yield a very low latency path---just a few clock cycles---from the network right to the very heart of the CPU core---its register file, giving mean and tail latency reduction of one to two order of magnitude. We do not believe there is a lower latency path to a running thread.
-
-\begin{figure}
-  \includegraphics[width=0.9\linewidth]{./figures/nanopu-arch}
-  \caption{A high-level architecture of \name{} having a NIC datapath with an event-driven MAU pipeline, a NIC-Core Interface with RX/TX context FIFOs per core and a thread scheduler, as well as CPU cores running the nanoKernel and nanotasks.}
-  \label{fig:nanoPU}
-\end{figure}
+These characteristics together enable the \name{} to process RPCs quickly and predictably making it the ideal platform for building compute-intensive, distributed applications.
 
 \alex{The nanoPU layer we're calling "NIC-Core interface" might be easier to understand if we refer to it as something like the "NIC Message Reassembler and Packetizer" layer. Since right now we have to keep referring to "the interface between the NIC-Core interface and the CPU", which is a little hard to follow. I'm wondering if it might be easier to have a separate name for the hardware (i.e. the per-context FIFOs, reassembly, packetization, and scheduling) -- then the NIC-core interface really is just the interface (i.e. the GPRs, CSRs and message formats.}
+\nick{This is a very good point. WHat if we rename the NIC Datapath to the NIC Packet Datapath and the NIC-CPU INterface to the NIC Message Datapath, to indicate that it handles messages for the CPU.}
 
 \input{text/nic-datapath}
 \input{text/nic-core-interface}

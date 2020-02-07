@@ -1,6 +1,6 @@
-// Simple loopback nanoservice
+// Simple loopback & increment nanoservice
 entry:
-  // First register context ID with NIC
+  // Register context ID & priority with NIC
   csrwi	lcurcontext, 0
   csrwi	lcurpriority, 0
   csrwi	lniccmd, 1
@@ -16,11 +16,7 @@ idle:
 
 // Loopback and increment 16B message
 loopback_plus1_16B:
-  // Copy application header from head to tail
-  mv t6, t5
-  // Increment first data word
-  addi t6, t5, 1
-  // Increment second data word
-  addi t6, t5, 1
-  // Wait for the next message
-  j wait_msg
+  mv t6, t5 // copy ctx hdr from head to tail
+  addi t6, t5, 1 // first data word + 1
+  addi t6, t5, 1 // second data word + 1
+  j wait_msg // wait for the next message
