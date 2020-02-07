@@ -1,49 +1,27 @@
-\section{Discussion}
-This section discusses aspects of the \name{} and nanoservices that we believe will lead in interesting directions for future research.
+\section{Design Considerations}
+Our \name{} is deliberately made simple, in part because of the constraints of an academic research project. The designer of a complete \name{} will need to consider many additional aspects of the design. We address some of the key tradeoffs. 
 
-\subsection{\name{} NIC-Core Interface Design Considerations}
-\steve{Removed: As mentioned in \S\ref{sec:prototype}, the changes to the RISC-V Rocket core that were required to support our fast path to the register file were very minimal. The most significant change resulted from the fact that reading the network RX queue in the CPU pipeline's decode stage causes a state change which must be undone when there is a pipeline flush resulting from a branch misprediction. We handle this situation by simply modifying the RX queue to be able to effectively ``unread'' the last two words that were removed.}
+\paragraph{GPRs vs CSRs} Our \name{} prototype on the RISC-V Rocket core repurposes two of its 32 general-purpose registers (GPRs) for the head and tail of the network queues. In a CPU with 32 registers, we can likely afford to lose two; our benchmark nanoservice applications did not suffer from the loss of two GPRs. However, if they did, the cost would be high as variables would spill over into memory, increasing latency. This would be exacerbated in embedded applications for a CPU with fewer GPRs. We therefore experimented with a design where the head and tail registers are implemented using control status registers (CSRs) instead, which might need to be considered in  settings with limited GPRs.
 
-Our \name{} design reserves two general purpose registers (GPRs) for the head and tail of the network RX and TX queues respectively.
-We also explored an alternative design where the head and tail registers are instead implemented using control status registers (CSRs).
-Using GPRs often results in lower latency for applications because GPR values feed directly into the CPU's ALU and thus avoids the need to copy every word of every message from the CSR to a GPR before using the ALU.
-However, if the number of GPRs is very limited, for example in a light weight embedded system, then sacrificing two GPRs may result in an excessive amount of register spill into memory, thus inflating latency.
-Our experiments suggest that reducing the number of GPRs in the RISC-V Rocket core from 32 to 30, does not have a significant impact on the amount of register spill for our benchmark suite of nanoservice applications.
-However, this design decision may need to be reconsidered in other settings.
+\paragraph{Floating point} Our \name{} design minimizes the latency from the network into the \emph{integer} register file.
+Many scientific computing applications, such as the N-body simulation, rely on \emph{floating point} arithmetic, with their own set of floating point GPRs.
+The default RISC-V ISA does not include instructions to copy an integer register to a floating point register; the value must first be stored into memory and then loaded into the floating point register file, increasing latency. If necessary, a designer should add instructions to the RISC-V ISA to copy between the two types of GPR. 
 
-Our \name{} prototype is built on top of the RISC-V Rocket core, which is a simple 5-stage, in-order RISC processor.
-While our prototype required very minor modifications to the CPU pipeline, the changes may need to be more invasive on an out-of-order RISC processor in order to ensure that words are read from the RX queue in the correct order.
+\paragraph{In-order Execution} Our \name{} prototype is built from a simple 5-stage, in-order RISC-V Rocket core.  While our prototype required very minor modifications to the CPU pipeline, the changes would require more invasive changes to an out-of-order processor in order to ensure that words are read from the RX queue in FIFO order. This is even evident on our simple 5-stage core: if there is a branch mis-prediction when reading the network RX queue, the CPU pipeline's decode stage causes a state change which must be undone when the pipeline is flushed. We modified the RX queue to ``unread'' the last two words that were removed. A more complete design would be needed for a CPU with out-of-order, speculative execution.
 
-Our \name{} design is optimized to minimize the latency from the network into the \emph{integer} register file.
-Many scientific computing applications, such as the N-body simulation described in \S\ref{ssec:bare-metal-evals}, require use of messages with \emph{floating point} numbers.
-Since the RISC-V ISA does not define instructions to directly copy bytes from an integer register to a floating point register without converting the number format, the number must first be stored into memory and then loaded into the floating point register file, resulting in additional latency.
-We advocate for a minor change to the RISC-V ISA in order to support instructions that directly copy bytes between the integer and floating point register files.
+%\paragraph{In-order execution} The \name{} prototype is our first step towards building a domain specific-processor for nanoservice applications requiring extremely fine-grained parallelism.  So far, we focused on, what we believe to be, the critical latency path: the network interface and thread scheduler, along with the accompanying changes to the compiler and assembler.  
 
-\subsection{\name{} as a Domain Specific Processor}
-We consider our \name{} prototype to be a first step towards building a domain specific processor for compute-intensive distributed applications.
-In this paper, we focus on what we believe to be the most important components of the architecture: the network interface and thread scheduler.
-That being said, we believe that future research on this topic should consider tailoring other aspects of the architecture including the memory hierarchy, on-chip network, CPU pipeline, and ISA for compute-intensive distributed applications.
+\paragraph{Domain specific versus general purpose} For clarity, we describe \name{} here as if it only runs nanoservices. This might be ideal, particularly if many applications can exploit its low-latency design. We can imagine a single chip with hundreds or thousands of \name{} cores, with little or no cache memory. But in other settings, for example in a warehouse computer, it might be necessary (or economically prudent) to support general purpose workloads too. As-is, \name{} does not support \emph{memory-intensive} distributed applications, such as a Key-Value store~\cite{memcached} (unless the database can be sharded so small that it fits in the L1 cache). In this case, the \name{} optimizations might be added to an otherwise general-purpose CPU. The NIC, for example, could steer only nanotask messages to the GPRs, and steer memory intensive traffic (e.g. RDMA or regular TCP) to the traditional DMA, memory, and cache path. This would require a more sophisticated thread scheduler for very low latency.
 
-Furthermore, it is not clear that writing C code is the best way to program the \name{}. Network applications written for the \name{} must process message data in FIFO order, have minimal memory requirements, and all communication is done via explicit message passing.
-Perhaps there is a higher-level, domain specific language that developers can use to facilitate writing stateful message processing applications.
+\paragraph{Domain specific languages} We assume that the NIC pipeline is programmed using the P4 language, or similar, for fast header processing. It is worth considering whether C is the correct language for nanotasks: Perhaps a set of libraries, restricted C, or a special language could help programmers craft very fast nanotasks using explicit message processing.
 
-As a result of being a domain specific processor, there are classes of applications that we believe will be ill-suited for the \name{}, such as \emph{memory-intensive} distributed applications.
-For example, a Key-Value store application~\cite{memcached} may or may not be well suited for the \name{}, depending on the scale and latency requirements.
-If the size of the database is small enough to fit in the L1 caches of a reasonable amount of \name{} cores then it would likely be good fit and would provide substantially lower latency than a DRAM based Key-Value store.
-However, if the size of the database is so large that it must reside in DRAM, then the \name{}'s fast path will probably not provide much benefit.
+\paragraph{Protection and security} The J-machine~\cite{jmachine} first used GPRs for low-latency communication, but the approach was abandoned because it was felt that isolating multiple contexts running on the same core required too much hardware software. With many generations of improvement in process technology (from $10^6$ transistors per chip in 1989 to over $10^10$ today), the per-context queues in the \name{} solve this problem in a manner not feasible at the time of the J-machine. 
 
-\subsection{Running Nanoservice Applications}
-Rather than using a standard Linux distribution to test our scheduling policies we decided to use a minimal operating system of our own design - the nanoKernel.
-Our main reason for doing this was to eliminate all of the general purpose logic in Linux in an effort to measure the minimum possible scheduling latency.
-That being said, our current nanoKernel implementation is lacking a few Linux features that we believe would be beneficial for running nanoservice applications.
-This includes features such as virtual memory and multiple privilege modes.
-That is, all applications in the nanoKernel currently execute in the same address space and at the same privilege level.
-We expect that this will change in future iterations of the nanoKernel.
+\paragraph{Kernel} Our prototype replaces Linux with our own minimal operating system, the nanokernel, designed to minimize average and peak latency for context switches. Our nanokernel currently lacks virtual memory and different privilege modes;
+applications and the nanokernel currently execute in the same address space and at the same privilege level. Our next generation nanokernel will address these issues, and we do not anticipate much increase in latency. A real system might also need a runtime resource scheduler to ensure high utilization of \name{} cores and NICs by dispatching nanoservice apps to cores, monitoring the utilization of the cores and NICs, the status of contexts, adjusting their priorities, and rebalancing over/under-utilized \name{}s on a longer timescale. 
 
-In addition to the nanoKernel and hardware thread scheduler, we suspect that we may also need a runtime system that ensures the high utilization of \name{} cores and NICs.
-This runtime system would be responsible for dispatching nanoservice apps to \name{} cores, monitoring the utilization of the cores and NICs, along with the status of contexts.
-If some cores or NICs are over/under-utilized for a long period of time, it will need to rebalance the system.
-If some contexts are starved for a long period of time, again it may need to address this.
+
+
 
 % \begin{itemize}
 %     \item The number of nanoservice apps running on any one core will likely be small in order to ensure that all the code and data resides in on-chip SRAM. Thus, we believe that it is feasible for the NIC to maintain per-context queues in hardware.

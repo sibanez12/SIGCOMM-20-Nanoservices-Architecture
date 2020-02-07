@@ -1,11 +1,11 @@
-\subsection{The NIC--Core Interface}
+\subsection{The NIC Message Datapath}
 \label{ssec:niccore-interface}
-The \name{}'s NIC--Core interface (Figure~\ref{fig:nanoPU}b), is responsible for assembling arriving packets into a self-contained RPC message, then queues it in a per-context FIFO until its destination thread is scheduled on a core to process it.
+The \name{}'s NIC message datapath (Figure~\ref{fig:nanoPU}b), is responsible for assembling arriving packets into a self-contained RPC message, then queues it in a per-context FIFO until its destination thread is scheduled on a core by a nanokernel to process it.
 The message then flows, one word at a time, into the core's register file.
-In the egress direction, messages sent by applications' threads are broken into packets before being sent to the NIC Datapath.
+In the egress direction, messages sent by applications' threads are broken into packets before being sent to the NIC packet datapath.
 
 We make two small modifications to the CPU core:
-\begin{itemize}
+\begin{itemize}[topsep=0.4\baselineskip, leftmargin=20pt]
     \item Two general-purpose registers (GPRs) are now reserved for a special purpose: one is the \verb|HEAD| of the network receive queue, the other is the \verb|TAIL| of the network transmit queue.
     Applications must be compiled to avoid using reserved GPRs for temporary storage.
     Fortunately, \verb|gcc| makes it easy to reserve registers via command-line options~\cite{gcc-options}.
@@ -13,13 +13,12 @@ We make two small modifications to the CPU core:
     These are used to configure the NIC with context IDs and to enable NIC-driven thread scheduling.
 \end{itemize}
 
-The NIC hardware maintains transmit and receive FIFOs for each context (\ie, thread) that is currently pinned to each core.
+The NIC message datapath maintains transmit and receive FIFOs for each context (\ie, thread) that is currently pinned to each core.
 It ensures that the currently running thread only sees (\ie, reads from and writes to) its own per-context FIFO via the \verb|HEAD| and \verb|TAIL| GPRs.
 
 The NIC exposes a {\em message} interface to applications running on the core, instead of the more traditional packet interface.
 This makes the \name{} NIC hardware responsible for the transport layer, which includes breaking messages into packets, ensuring reliable delivery across the network, and performing message reassembly at the receiving end.
-To this end, messages between the NIC and core carry a small 8-byte header whose format is shown in Figure~\ref{fig:app-headers}.\shahbaz{this text is repetitive (maybe in a good way), but already appeared in the previous section.}
-Outgoing messages carry the destination IP address, context ID and message length, while incoming messages carry the source IP address, context ID and message length.
+To this end, messages between the NIC and core carry a small 8-byte header whose format is shown in Figure~\ref{fig:app-headers}.
 
 \begin{figure}
   \centering
@@ -28,18 +27,18 @@ Outgoing messages carry the destination IP address, context ID and message lengt
   \lstinputlisting[language=riscv]{code/loopback.txt}
   \end{minipage}
   \vspace{-10pt}
-  \captionof{lstlisting}{Loopback with increment: a simple RISC-V assembly program for the \name{} to register a context \& priority with the NIC, wait for a \SI{16}{B} message to arrive, increment each word of the message and return it to the sender.}
+  \captionof{lstlisting}{Loopback with increment: a simple RISC-V assembly program for the \name{} that waits for a \SI{16}{B} message to arrive, increments each word of the message, and returns it to the sender.}
   \label{lst:asm}
 \end{figure}
 
 \paragraph{A \name{} program (loopback-increment)}
 To illustrate how software on the \name{} interacts with the NIC, Listing~\ref{lst:asm} shows a simple loopback-increment program in RISC-V assembly language.
-The program continuously reads 16-byte messages (consisting of two 8-byte integers) from the network, increments the integers, and sends the messages back to their sender.
-The program is described in more detail below.
+The program continuously reads 16-byte messages (two 8-byte integers) from the network, increments the integers, and sends the messages back to their sender.
+The program details are described below.
 
 The \verb|entry| procedure registers a context ID and its priority with the NIC by first writing a value to both the \verb|lcurcontext| and \verb|lcurpriority| CSRs, then subsequently writes the value 1 to the \verb|lniccmd| CSR.
-The \verb|lniccmd| CSR is a bit vector used by the supervisor-mode software \shahbaz{is this nanokernel?}\steve{it would privileged code that is executed by a system call made by the application} to send commands to the NIC--in this case, it is used to tell the NIC to allocate an RX and a TX queue for context ID$~=0$ with priority level$~=0$.
-The \verb|lniccmd| CSR can also be used to remove context IDs or to update the priority level.\footnote{Registering a context ID with the NIC is roughly equivalent to opening a socket on a modern OS.}
+The \verb|lniccmd| CSR is a bit vector used by software to send commands to the NIC; in this case, it is used to tell the NIC to allocate an RX and TX queue for context ID $=0$ with priority level $=0$.
+The \verb|lniccmd| CSR can also be used to remove context IDs or to update priority level.\footnote{Registering a context ID with the NIC is roughly equivalent to opening a socket on a modern OS.}
 
 The \verb|wait_msg| procedure waits for a message to arrive in the RX queue by polling the \verb|lmsgsrdy| CSR until it is set by the NIC, indicating that the context has messages to process.
 While it is waiting, the application tells the NIC that it is idle by setting the \verb|lidle| CSR during the polling loop.
