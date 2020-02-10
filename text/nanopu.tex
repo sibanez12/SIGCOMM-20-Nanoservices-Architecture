@@ -1,8 +1,8 @@
 \section{The \name{}}
 \label{sec:nanoPU}
-The \name{} is a new domain-specific processor optimized for running nanotasks---with low average and peak latency---for compute-intensive distributed applications based on nanoservices. 
+The \name{} is a new domain-specific processor optimized for running nanotasks---with low average and tail latency---for compute-intensive distributed applications based on nanoservices. 
 A \name{} consists of one or more CPU cores and one or more low-latency NICs. 
-The CPU cores are slightly-modified cores; our design is based on the popular, open-source RISC-V ISA~\cite{riscv}. 
+The CPU cores are slightly modified cores; our design is based on the popular, open-source RISC-V ISA~\cite{riscv}. 
 The low-latency NIC is inspired by the recently proposed {\em Lightning NIC (L-NIC)}~\cite{lnic}, a novel approach that terminates the transport layer in hardware, then delivers message data right into the registers at the heart of the CPU core.  
 The L-NIC approach minimizes latency (and unpredictability) by bypassing DMA, cache, and DRAM entirely. 
 Our \name{} design also adds a novel hardware thread scheduler, to minimize the time (and variability) from when a message arrives until the thread starts processing it.
@@ -14,15 +14,13 @@ For example, it would be practical today to design a chip with 500 cores~\cite{c
 Of course, many other ratios are possible and the ideal ratio depends on the application, technology, and economics. 
 
 \begin{figure}
-  \includegraphics[width=0.9\linewidth]{./figures/nanopu-arch}
+  \includegraphics[width=0.95\linewidth]{./figures/nanopu-arch}
   \caption{The \name{} architecture. The NIC includes an event-driven PISA pipeline, and provides an RPC message abstraction to a thread via dedicated RX/TX registers in the CPU. CPU cores run a nanokernel and user nanotasks.}
   \label{fig:nanoPU}
 \end{figure}
 
-\steve{A note to remind Shahbaz to adjust CSRs representation in Figures}
-
 The \name{} is a domain-specific processor. 
-With Moore's Law slowing down, new domain-specific processors are being widely used as accelerators for specific, high-volume workloads, such as graphics~\cite{nvidia-geforce}, machine-learning~\cite{tensorflow} and networking~\cite{RMT}. 
+With Moore's Law slowing down, new domain-specific processors are being widely used as accelerators for specific, high-volume workloads, such as graphics~\cite{nvidia-geforce}, machine learning~\cite{tensorflow} and networking~\cite{RMT}. 
 While the \name{} is not nearly as radical a departure from a general-purpose CPU as, say, a GPU, TPU or programmable switch (after all, our design relies heavily on an existing core), the \name{} shares the approach of tailoring the chip design for a specific class of applications.\footnote{As an aside, it is only possible to consider prototyping a \name{} in a university because of two recent trends: RISC-V provides a remarkably stable starting point, and the narrow performance gap between the leading edge process (currently \SI{7}{nm}) and the closest already-paid-for process (\SI{16}{nm}) makes it economically feasible to build an interesting \name{}.}
 
 If \name{} is so fast, why are not all CPUs designed this way? 
@@ -44,7 +42,7 @@ The \name{} has the following key characteristics that we visit, in turn, in the
     \item {\bf Hardware Thread Scheduling:} In addition to moving network messages into the CPU quickly, the \name{} must also make sure that the appropriate application thread is running on the core so that it can start processing messages promptly. For this, \name{} includes a very low-latency, thread scheduler on the NIC and a light-weight nanokernel on the CPU.
 \end{itemize}
 
-These characteristics together enable the \name{} to process RPCs quickly and predictably making it ideal for building compute-intensive, distributed applications.
+These characteristics together enable the \name{} to process RPCs quickly and predictably, making it ideal for building compute-intensive, distributed applications.
 
 \input{text/nic-datapath}
 \input{text/nic-core-interface}

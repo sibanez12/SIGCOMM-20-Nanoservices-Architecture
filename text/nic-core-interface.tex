@@ -1,6 +1,6 @@
 \subsection{The NIC Message Datapath}
 \label{ssec:niccore-interface}
-The \name{}'s NIC message datapath (Figure~\ref{fig:nanoPU}b), is responsible for assembling arriving packets into a self-contained RPC message, then queues it in a per-context FIFO until its destination thread is scheduled on a core by a nanokernel to process it.
+The \name{}'s NIC message datapath (Figure~\ref{fig:nanoPU}b) assembles arriving packets into a self-contained RPC message, then queues that message in a per-context FIFO until its destination thread is scheduled on a core by a nanokernel to be processed.
 The message then flows, one word at a time, into the core's register file.
 In the egress direction, messages sent by applications' threads are broken into packets before being sent to the NIC packet datapath.
 
@@ -26,7 +26,7 @@ To this end, messages between the NIC and core carry a small 8-byte header whose
   \begin{minipage}[c]{0.9\linewidth}
   \lstinputlisting[language=riscv]{code/loopback.txt}
   \end{minipage}
-  \vspace{-10pt}
+  \vspace{-5pt}
   \captionof{lstlisting}{Loopback with increment: a simple RISC-V assembly program for the \name{} that waits for a \SI{16}{B} message to arrive, increments each word of the message, and returns it to the sender.}
   \label{lst:asm}
 \end{figure}
@@ -36,7 +36,7 @@ To illustrate how software on the \name{} interacts with the NIC, Listing~\ref{l
 The program continuously reads 16-byte messages (two 8-byte integers) from the network, increments the integers, and sends the messages back to their sender.
 The program details are described below.
 
-The \verb|entry| procedure registers a context ID and its priority with the NIC by first writing a value to both the \verb|lcurcontext| and \verb|lcurpriority| CSRs, then subsequently writes the value 1 to the \verb|lniccmd| CSR.
+The \verb|entry| procedure registers a context ID and its priority with the NIC by first writing a value to both the \verb|lcurcontext| and \verb|lcurpriority| CSRs, then subsequently writing the value 1 to the \verb|lniccmd| CSR.
 The \verb|lniccmd| CSR is a bit vector used by software to send commands to the NIC; in this case, it is used to tell the NIC to allocate an RX and TX queue for context ID $=0$ with priority level $=0$.
 The \verb|lniccmd| CSR can also be used to remove context IDs or to update priority level.\footnote{Registering a context ID with the NIC is roughly equivalent to opening a socket on a modern OS.}
 
@@ -44,7 +44,7 @@ The \verb|wait_msg| procedure waits for a message to arrive in the RX queue by p
 While it is waiting, the application tells the NIC that it is idle by setting the \verb|lidle| CSR during the polling loop.
 The NIC thread scheduler uses the idle signal to evict waiting threads in order to schedule a new thread that has messages waiting to be processed.
 
-The \verb|loopback_plus1_16B| procedure simply swaps the source and destination addresses by moving the context header (the first word of every message) from the head register (\verb|t5|) to the tail register (\verb|t6|), shown on line 20 (Listing~\ref{lst:asm}). 
+The \verb|loopback_plus1_16B| procedure simply swaps the source and destination addresses by moving the context header (the first word of every message) from the head register (\verb|t5|) to the tail register (\verb|t6|), shown on line 19 (Listing~\ref{lst:asm}). 
 It then increments every integer in the received message, appends them to the message being transmitted, and waits for the next message to arrive.
 
 Applications that use variable-length messages can use the message length (in the context header) to read the correct number of words from the network RX queue.

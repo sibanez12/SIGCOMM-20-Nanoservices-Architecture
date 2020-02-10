@@ -8,7 +8,7 @@ Basic PISA only supports one type of event: the arrival of new packets.
 Section~\ref{ssec:nic-transport} describes how an event-driven PISA pipeline can directly support transport protocols in hardware, offloading per-packet processing from the CPU. 
 
 The PISA pipeline also performs protocol processing: depending on the loaded P4 program~\cite{P4}, it might add and remove Ethernet, IP, VXLAN, GRE, INT~\cite{INT} and transport headers. 
-We also program it to add or remove a small application-specific per-context header containing an IP address, a context ID, and the message length (\Cref{fig:app-headers}).
+We also program it to add or remove a small per-context header containing an IP address, a context ID, and the message length (\Cref{fig:app-headers}).
 
 \begin{figure}
  \includegraphics[width=0.95\linewidth]{./figures/ctx-hdr-fmt}
@@ -16,5 +16,5 @@ We also program it to add or remove a small application-specific per-context hea
  \label{fig:app-headers}
 \end{figure}
 
-As others have noted, a P4-programmable PISA pipeline can also be used to accelerate some applications by offloading processing from the CPU (\eg, memory and disk caches~\cite{netcache}, load-balancers~\cite{silkroad}, consensus protocols~\cite{netchain} and firewalls~\cite{p4-firewall}). 
+As others have noted, a P4-programmable PISA pipeline can also be used to accelerate some applications by offloading processing from the CPU (\eg, memory and disk caches~\cite{netcache}, load-balancers~\cite{silkroad}, consensus protocols~\cite{netchain} and firewalls \cite{p4-firewall}). 
 The L-NIC paper~\cite{lnic} describes how a PISA pipeline can accelerate nanoservices to search the Othello state-space.

@@ -1,13 +1,16 @@
 \begin{abstract}
-\nick{please comment on new abstract.}
-Microservices have been shown to speedup a broad class of applications by employing fine-grained parallelism using serverless tasks that run for just a few milliseconds. This paper takes this approach to the extreme: Our goal is to enable much finer-grained parallelism, that we call {\em nanoservices} built from {\em nanotasks} lasting less than $1\mu$s. Making this practical is primarily a networking problem, not a computer architecture problem. Our nanoservice Processing Unit (\name{}), runs on a slightly-modified CPU with a very low latency network interface (NIC). The \name{} is a domain-specific processor optimized to run sub-microsecond, cache-resident RPC nanotasks. 
+Microservices have been shown to accelerate a broad class of applications by employing fine-grained parallelism using serverless tasks that run for just a few milliseconds. 
+This paper takes the approach to the extreme: our goal is to enable a much finer-grained parallelism, with what we call {\em nanoservices}, built from {\em nanotasks} each running for less than \SI{1}{\mu s}. 
+Making this practical is primarily a networking problem. 
+Our nanoservice Processing Unit (\name{}), runs on a slightly modified CPU with a very low-latency network interface (NIC). 
+The \name{} is a domain-specific processor optimized to run sub-microsecond, cache-resident RPC nanotasks. 
 
-The \name{} is a new networking-optimized compute platform for nanoservices. It contains a fast path from the network directly to the heart of a CPU core, minimizing communication latency, and delegates thread scheduling and transport logic to the NIC, minimizing tail RPC-completion times and per-message overheads.
+The \name{} is a new networking-optimized compute platform for nanoservices. It contains a fast path from the network directly to the heart of a CPU core, minimizing communication latency, and it delegates thread scheduling and transport logic to the NIC, minimizing tail RPC-completion times and per-message overheads.
 
-We designed a prototype \name{} on top of an open-source RISC-V CPU and evaluated its performance for a suite of real nanoservice applications using cycle-accurate hardware simulations. We synthesized our design to run on an FPGA.
+We designed a prototype \name{} on top of an open-source RISC-V CPU and evaluated its performance for a suite of real nanoservice applications using cycle-accurate hardware simulations. 
+We also synthesized our design to run on an FPGA.
+The \name{} reduces the average RPC request-response latency from the best reported (tens of microseconds) to below $1\mu$s for nanoservice applications. 
+We demonstrate NFV-like streaming applications running 3.5--4$\times$ faster and N-body simulations running four orders of magnitude faster than ChanGa~\cite{changa} (an HPC simulation framework) on a modern system.
+The \name{} additionally uses the NIC hardware to schedule high-priority threads so they start processing less than \SI{100}{ns} after a message arrives, two orders of magnitude faster than the current state-of-the-art.
 
-The \name{} reduces the average RPC request-response latency from the best reported (hundreds of microseconds) to below $1\mu$s for a specific class of nanoservice applications. We demonstrate NFV-like streaming applications running 3.5-4$\times$ faster and N-body simulations running four orders of magnitude faster than ChanGa~\cite{changa} on a modern system.
-The \name{} uses NIC hardware to schedule high priority threads so they start processing less than 100ns after a message arrives, two orders of magnitude faster than the current state-of-the-art.
-
-We believe that if \name{}s were available, application writers would exploit extremely fine-grained computing for a  class of distributed applications that don't require large memory interactions. 
 \end{abstract}

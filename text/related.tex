@@ -1,8 +1,8 @@
 \section{Related Work}
 
 \paragraph{Building Distributed Apps}
-Microservices and serverless compute is growing in popularity for finer-grained computing than in the past~\cite{aws-lambda, gcloud-functions, azure-functions}, and has been used to implement fine grained video encoding~\cite{ExCamera}, compilers~\cite{gg}, and scientific computing applications~\cite{PyWren}.
-Our nanoservices framework would drive this approach to the extreme and the \name{} is designed to make it possible.
+Microservices and serverless compute is growing more in popularity for finer-grained computing than in the past~\cite{aws-lambda, gcloud-functions, azure-functions}, and has been used to implement fine grained video encoding~\cite{ExCamera}, compilers~\cite{gg}, and scientific computing applications~\cite{PyWren}.
+Our nanoservices framework would drive this approach to the extreme. Our \name{} is designed to make it possible.
 
 \paragraph{Minimizing RPC Tail Latency}
 Several authors have recently described novel approaches to minimize tail RPC completion time (Shinjuku~\cite{shinjuku}, Shenango~\cite{shenango}, and RPCValet~\cite{rpcvalet}) by efficiently load balancing incoming requests across cores. While demonstrably good for {\em micro}services, software schedulers are too slow for nanoservices. We believe load balancing messages to nanotasks is best done by the sender or by the network, not the receiving host where it is already too late, especially for the massive degrees of incast that we expect nanoservices to exhibit. Fine-grained load-balancing across \name{}s, plus receiver-driven scheduling in the transport layer (a la Homa~\cite{homa} and NDP~\cite{ndp}) should balance load better than a software scheduler could at the receiver. 

@@ -1,9 +1,9 @@
 \subsection{NIC-Driven Thread Scheduling}
 \label{ssec:thread-scheduler}
 In some specialized applications, thread scheduling might not be needed. Big HPC applications, for example, might pin every nanotask to a dedicated core for the duration of a run. But this would not work for a cloud provider who needs more economical sharing of \name{}s by multiple nanoservice applications.
-Nanotask threads will therefore need to be switched in and out frequently, and context switches must be extremely fast. Otherwise we will lose all the low latency benefits of nanoservices.
+Nanotask threads will therefore need to be switched in and out frequently, and context switches must be extremely fast. Otherwise, we will lose all the low latency benefits of nanoservices.
 
-If \name{} relied on software scheduling it would be too slow. 
+If \name{} relied on software scheduling, it would be too slow. 
 The fastest best-of-breed software schedulers use 5$\mu$s timer interrupts~\cite{shinjuku, shenango} which are much too slow for our $<1\mu$s nanotasks.
 And so, instead, the NIC hardware (\Cref{fig:nanoPU}d) decides which thread to run next, and informs the \name{}'s minimal operating system---the nanokernel. 
 The NIC keeps track of the highest-priority nanotask with messages to process and interrupts the CPU to initiate a context switch under two conditions:
@@ -23,9 +23,7 @@ When the high-priority context finishes processing the message, it tells the NIC
 The NIC then initiates a context switch back to the low-priority context because it still has messages to process.
 
 \begin{figure}
-  \includegraphics[width=0.8\linewidth]{./figures/thread-sched}
+  \includegraphics[width=0.95\linewidth]{./figures/thread-sched}
   \caption{The steps that occur when a low-priority thread running on a core is preempted by a higher-priority thread.}
   \label{fig:nic-scheduler}
 \end{figure}
-
-\steve{Note to remind Shahbaz to make queue labels bold.}

@@ -1,14 +1,12 @@
 \section{\name{} Prototype}
 \label{sec:prototype}
-In order to evaluate the expected performance of a \name{}, we built a prototype in Chisel~\cite{chisel} and C on top of the open source RISC-V Rocket Core system~\cite{rocket-chip} and evaluated performance using cycle-accurate hardware simulations~\cite{verilator}.
+In order to evaluate the expected performance of a \name{}, we built a prototype in Chisel~\cite{chisel} and C on top of the open source RISC-V Rocket core system~\cite{rocket-chip} and evaluated performance using cycle-accurate hardware simulations~\cite{verilator}.
 
 \begin{figure}
   \includegraphics[width=0.9\linewidth]{./figures/prototype}
   \caption{Block diagram of (a) the \name{} prototype and (b) a traditional RISC-V system with IceNIC.}
   \label{fig:prototype}
 \end{figure}
-
-\steve{Maybe this is OK, but the nanoPU prototype figure shows an L-NIC connected to the Rocket Core, but L-NIC hasn't been mentioned since the intro. Should this just be called NIC? Or should we update Figure 3 to indicate that the NIC is L-NIC?}
 
 Figure~\ref{fig:prototype}a shows a high-level block diagram of the prototype's most relevant components.
 The prototype implements the main components of the NIC described in \S\ref{sec:nanoPU} and connects it to a slightly modified RISC-V Rocket core.
@@ -20,7 +18,7 @@ The prototype implements the following aspects of the \name{}:
 \end{itemize}
 Since the prototype does not implement a transport protocol, we assume that all messages sent and received by the applications consist of a single Ethernet packet, which we believe will be true for the vast majority of nanoservice applications.
 
-To provide a useful reference, we compare the performance of our \name{} prototype to a RISC-V Rocket Core with a traditional DMA-based NIC called IceNIC~\cite{firesim}.
+To provide a useful reference, we compare the performance of our \name{} prototype to a RISC-V Rocket core with a traditional DMA-based NIC called IceNIC~\cite{firesim}.
 Figure~\ref{fig:prototype}b depicts a block diagram of the IceNIC RISC-V system.
 IceNIC behaves in a similar fashion to Intel DDIO based NICs.
 That is, it uses DMA to move network packets directly between the NIC and the CPU's last level cache.
